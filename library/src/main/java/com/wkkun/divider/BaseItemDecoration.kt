@@ -46,7 +46,7 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
     protected var orientation = build.orientation
 
     protected var headViewCount = build.headViewCount
-    protected var footViewCount = build.FootViewCount
+    private var footViewCount = build.footViewCount
 
     /**
      * 设置分割线绘制的长度是否依照子View的长度  默认是根据RecyclerView的长度或者高度进行绘制的
@@ -66,10 +66,6 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
         //当前View的位置
         val position = parent.getChildAdapterPosition(view)
         setItemOffsets(position, itemSum, outRect, view, parent)
-        Log.d(
-            tag,
-            "偏移:position=$position ,left=${outRect.left} right=${outRect.right} top=${outRect.top} bottom=${outRect.bottom}"
-        )
     }
 
     abstract fun setItemOffsets(position: Int, itemCount: Int, outRect: Rect, view: View, parent: RecyclerView)
@@ -83,19 +79,22 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
         val childCount = parent.childCount - footViewCount
         //遍历所有的View 绘制分割线
         for (index in 0 until childCount) {
-            if ((parent.layoutManager !is GridLayoutManager)&&dividerVisibleProvider?.shouldHideDivider(index, parent) == true) {
+            val child = parent.getChildAt(index)
+            //子View在adapter中的位置
+            val childPosition = parent.getChildAdapterPosition(child)
+            if ((parent.layoutManager !is GridLayoutManager)&&dividerVisibleProvider?.shouldHideDivider(childPosition, parent) == true) {
                 //隐藏分割线 网格不支持隐藏分割线
                 continue
             }
-            if (!isShowLastDivider && (index == parent.adapter?.itemCount ?: parent.childCount - 1)) {
+            if (!isShowLastDivider && ((childPosition+1) == parent.adapter?.itemCount ?: parent.childCount)) {
                 //最后一个View 隐藏分割线
                 continue
             }
-            val child = parent.getChildAt(index)
-            val rectBound = getDrawRectBound(index, childCount, child, parent)
+
+            val rectBound = getDrawRectBound(childPosition, childCount, child, parent)
 
             if (dividerColorProvider != null) {
-                val color = dividerColorProvider?.getDividerColor(index, parent)
+                val color = dividerColorProvider?.getDividerColor(childPosition, parent)
                         ?: Color.parseColor(defaultColor)
                 paint.color = color
                 paint.strokeWidth = dividerWidth.toFloat()
@@ -108,7 +107,7 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
                 continue
             }
             if (dividerPaintProvider != null) {
-                paint = dividerPaintProvider?.getDividerPaint(index, parent) ?: Paint()
+                paint = dividerPaintProvider?.getDividerPaint(childPosition, parent) ?: Paint()
                 rectBound.forEach {
                     c.drawLine(
                         it.left.toFloat(),
@@ -120,7 +119,7 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
                 continue
             }
             if (dividerDrawableProvider != null) {
-                val drawable = dividerDrawableProvider?.getDividerDraw(index, parent)
+                val drawable = dividerDrawableProvider?.getDividerDraw(childPosition, parent)
                 if (drawable != null) {
                     rectBound.forEach {
                         drawable.bounds = it
@@ -154,7 +153,7 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
 
         internal var dividerVisibleProvider: DividerVisibleProvider? = null
         internal var headViewCount: Int = 0
-        internal var FootViewCount: Int = 0
+        internal var footViewCount: Int = 0
         /**
          * 设置分割线的高度
          */
@@ -176,7 +175,7 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
             return this
         }
         fun setFooterViewCount(FootViewCount:Int):Builder{
-            this.FootViewCount = FootViewCount
+            this.footViewCount = FootViewCount
             return this
         }
 
@@ -216,12 +215,6 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
             margin[3] = bottomMargin
             return this
         }
-
-
-//        fun setOrientation(orientation: Int): Builder {
-//            this.orientation = orientation
-//            return this
-//        }
 
         fun setDividerDrawableProvider(dividerDrawableProvider: DividerDrawableProvider): Builder {
             this.dividerDrawableProvider = dividerDrawableProvider
