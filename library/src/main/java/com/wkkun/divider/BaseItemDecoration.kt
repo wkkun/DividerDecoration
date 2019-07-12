@@ -1,4 +1,5 @@
 package com.wkkun.divider
+
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -9,7 +10,6 @@ import android.support.annotation.DimenRes
 import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.OrientationHelper
 import android.support.v7.widget.RecyclerView
-import android.util.Log
 import android.view.View
 import java.util.*
 
@@ -62,7 +62,7 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
     override fun getItemOffsets(outRect: Rect, view: View, parent: RecyclerView, state: RecyclerView.State) {
         super.getItemOffsets(outRect, view, parent, state)
         //View的总数
-        val itemSum = parent.adapter?.itemCount ?: parent.childCount -footViewCount
+        val itemSum = parent.adapter?.itemCount ?: parent.childCount - footViewCount
         //当前View的位置
         val position = parent.getChildAdapterPosition(view)
         setItemOffsets(position, itemSum, outRect, view, parent)
@@ -82,20 +82,27 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
             val child = parent.getChildAt(index)
             //子View在adapter中的位置
             val childPosition = parent.getChildAdapterPosition(child)
-            if ((parent.layoutManager !is GridLayoutManager)&&dividerVisibleProvider?.shouldHideDivider(childPosition, parent) == true) {
+            if ((parent.layoutManager !is GridLayoutManager) && dividerVisibleProvider?.shouldHideDivider(
+                    childPosition,
+                    parent
+                ) == true
+            ) {
                 //隐藏分割线 网格不支持隐藏分割线
                 continue
             }
-            if (!isShowLastDivider && ((childPosition+1) == parent.adapter?.itemCount ?: parent.childCount)) {
+            if (!isShowLastDivider && ((childPosition + 1) == parent.adapter?.itemCount ?: parent.childCount)) {
                 //最后一个View 隐藏分割线
-                continue
+                if (parent.layoutManager !is GridLayoutManager)
+                    continue
             }
-
-            val rectBound = getDrawRectBound(childPosition, childCount, child, parent)
+            val rectBound = getDrawRectBound(
+                childPosition,
+                parent.adapter?.itemCount ?: parent.childCount, child, parent
+            )
 
             if (dividerColorProvider != null) {
                 val color = dividerColorProvider?.getDividerColor(childPosition, parent)
-                        ?: Color.parseColor(defaultColor)
+                    ?: Color.parseColor(defaultColor)
                 paint.color = color
                 paint.strokeWidth = dividerWidth.toFloat()
                 rectBound.forEach {
@@ -103,18 +110,30 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
                         it,
                         paint
                     )
+
                 }
                 continue
             }
             if (dividerPaintProvider != null) {
                 paint = dividerPaintProvider?.getDividerPaint(childPosition, parent) ?: Paint()
                 rectBound.forEach {
-                    c.drawLine(
-                        it.left.toFloat(),
-                        it.top.toFloat(),
-                        it.right.toFloat(),
-                        it.bottom.toFloat(), paint
-                    )
+                    if (Math.abs(it.left-it.right)>Math.abs(it.top-it.bottom)){
+//                        横条
+                        c.drawLine(
+                            it.left.toFloat(),
+                            (it.top.toFloat()+it.bottom.toFloat())/2,
+                            it.right.toFloat(),
+                            (it.top.toFloat()+it.bottom.toFloat())/2, paint
+                        )
+                    }else{
+//                        竖条
+                        c.drawLine(
+                            (it.left.toFloat()+ it.right.toFloat())/2,
+                            it.top.toFloat(),
+                            (it.left.toFloat()+ it.right.toFloat())/2,
+                            it.bottom.toFloat(), paint
+                        )
+                    }
                 }
                 continue
             }
@@ -134,7 +153,7 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
 
 
     abstract class Builder(private val mContext: Context, layoutOrientation: Int) {
-        internal var orientation: Int =layoutOrientation
+        internal var orientation: Int = layoutOrientation
         internal var dividerWidth: Int = 9
 
         internal val margin: IntArray = intArrayOf(0, 0, 0, 0)
@@ -170,11 +189,12 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
             return this
         }
 
-        fun setHeadViewCount(headViewCount:Int):Builder{
+        fun setHeadViewCount(headViewCount: Int): Builder {
             this.headViewCount = headViewCount
             return this
         }
-        fun setFooterViewCount(FootViewCount:Int):Builder{
+
+        fun setFooterViewCount(FootViewCount: Int): Builder {
             this.footViewCount = FootViewCount
             return this
         }
