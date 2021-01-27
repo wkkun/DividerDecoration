@@ -35,8 +35,12 @@ class ListActivity : AppCompatActivity() {
             MainActivity.TYPE_MULTI -> {
                 multi()
             }
-            MainActivity.TYPE_SPACE -> {
+            MainActivity.TYPE_LINER_SPACE -> {
                 space()
+            }
+
+            MainActivity.TYPE_GRID_SPACE -> {
+                gridSpace()
             }
         }
     }
@@ -47,10 +51,8 @@ class ListActivity : AppCompatActivity() {
         recyclerView.addItemDecoration(
             LinerItemDecoration.Builder(this, OrientationHelper.VERTICAL)
                 .setDividerWidthPx(20)//分割线的宽度 单位px
-                .setDividerMarginPx(10, 10, 10, 20)//设置分割线距离item的间隔
+                .setDividerMarginPx(10, 10, 10, 10)//设置分割线距离item的间隔
                 .setDividerDrawByChild(true)//设置绘制分割线的长度是否是根据item的长度来绘制 默认为false代表绘制是根据RecyclerView的长度来的
-                .setHeadViewCount(0)//设置头布局的个数 默认为0 头布局之间没有分割线 以及头布局与第一条数据之间也是没有分割线
-                .setFooterViewCount(0)//设置尾布局的个数 默认为0 尾布局之间没有分割线
                 .showLastDivider(false)//最后一个item后面是否有分割线 默认为false
                 .setDividerColorProvider(object : BaseItemDecoration.DividerColorProvider {
                     override fun getDividerColor(position: Int, parent: RecyclerView): Int {
@@ -90,8 +92,6 @@ class ListActivity : AppCompatActivity() {
         recyclerView.addItemDecoration(
             GridItemDecoration.Builder(this, OrientationHelper.VERTICAL)
                 .setDividerWidthPx(10)
-                .setFooterViewCount(0)
-                .setHeadViewCount(0)
                 .setDividerMarginPx(10, 10, 10, 10)
                 .setDividerColorProvider(object : BaseItemDecoration.DividerColorProvider {
                     override fun getDividerColor(position: Int, parent: RecyclerView): Int {
@@ -111,8 +111,6 @@ class ListActivity : AppCompatActivity() {
                 .setDividerWidthPx(20)//分割线的宽度 单位px
                 .setDividerMarginPx(10, 10, 10, 10)//设置分割线距离item的间隔
                 .setDividerDrawByChild(false)//设置绘制分割线的长度是否是根据item的长度来绘制 默认为false代表绘制是根据RecyclerView的长度来的
-                .setHeadViewCount(0)//设置头布局的个数 默认为0 头布局之间没有分割线 以及头布局与第一条数据之间也是没有分割线
-                .setFooterViewCount(0)//设置尾布局的个数 默认为0 尾布局之间没有分割线
                 .showLastDivider(false)//最后一个item后面是否有分割线 默认为false
                 .setDividerPaintProvider(object : BaseItemDecoration.DividerPaintProvider {
                     override fun getDividerPaint(position: Int, parent: RecyclerView): Paint {
@@ -128,20 +126,35 @@ class ListActivity : AppCompatActivity() {
         )
     }
 
+    /**
+     * 设置空格分割线
+     */
     private fun space() {
         recyclerView.layoutManager = LinearLayoutManager(this,  OrientationHelper.VERTICAL, false)
         recyclerView.addItemDecoration(
             LinerItemDecoration.Builder(this, OrientationHelper.VERTICAL)
-                .setDividerWidthPx(10)
-                .setFooterViewCount(0)
-                .setHeadViewCount(0)
-                .setDividerMarginPx(10, 10, 10, 10)
-                .setDividerSpaceProvider(object :BaseItemDecoration.DividerSpaceProvider{
-                    override fun getDividerSpace(position: Int, parent: RecyclerView): Int {
-                        return 20+position
-                    }
+                .setDividerWidthPx(20)
+                .showLastDivider(true)
+                .showTopDivider(true)
+                .setBottomDividerWidthPx(50)
+                .setTopDividerWidthPx(50)
+                .build()
+        )
+    }
 
-                })
+
+    /**
+     * 设置网格空格分割线
+     */
+    private fun gridSpace() {
+        recyclerView.layoutManager = GridLayoutManager(this, 3, OrientationHelper.VERTICAL, false)
+        recyclerView.addItemDecoration(
+            GridItemDecoration.Builder(this, OrientationHelper.VERTICAL)
+                .setDividerWidthPx(20)
+                .showTopDivider(true)
+                .setTopDividerWidthPx(50)
+                .setBottomDividerWidthPx(50)
+                .showLastDivider(true)
                 .build()
         )
     }

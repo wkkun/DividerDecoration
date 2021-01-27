@@ -12,7 +12,9 @@ class MainActivity : AppCompatActivity() {
         const val TYPE_LINEAR = 1
         const val TYPE_GRID = 2
         const val TYPE_MULTI = 3
-        const val TYPE_SPACE = 4
+        const val TYPE_LINER_SPACE = 4
+        const val TYPE_GRID_SPACE = 5
+
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,11 +42,16 @@ class MainActivity : AppCompatActivity() {
         }
 
         bt4.setOnClickListener {
-            //空格
-            intent.putExtra(TYPE, TYPE_SPACE)
+            //线性空格
+            intent.putExtra(TYPE, TYPE_LINER_SPACE)
             startActivity(intent)
         }
 
+        bt5.setOnClickListener {
+            //网格
+            intent.putExtra(TYPE, TYPE_GRID_SPACE)
+            startActivity(intent)
+        }
 
     }
 }

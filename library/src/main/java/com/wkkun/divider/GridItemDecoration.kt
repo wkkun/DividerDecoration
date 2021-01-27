@@ -20,20 +20,22 @@ class GridItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
     private var right = 0
     private var bottom = 0
     private var span: Int = 0
-    override fun setItemOffsets(position: Int, itemCount: Int, outRect: Rect, view: View, parent: RecyclerView) {
+    override fun setItemOffsets(
+        position: Int,
+        itemCount: Int,
+        outRect: Rect,
+        view: View,
+        parent: RecyclerView
+    ) {
         if (span == 0) {
             if (parent.layoutManager !is GridLayoutManager) {
-                Log.e(tag,"使用GridItemDecoration时,请确保是网格布局")
+                Log.e(tag, "使用GridItemDecoration时,请确保是网格布局")
                 outRect.set(0, 0, 0, 0)
                 return
             }
             span = (parent.layoutManager as GridLayoutManager).spanCount
         }
-        if (position < headViewCount) {
-            //头布局不需要分割线
-            outRect.set(0, 0, 0, 0)
-            return
-        }
+
         if (orientation == OrientationHelper.VERTICAL) {
             //纵向布局
             bottom = getDrawableHeight(position, parent) + margin[1] + margin[3]
@@ -43,7 +45,7 @@ class GridItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
             if (!isShowLastDivider && isLastRow(position, span, itemCount)) {
                 bottom = 0
             }
-            when ((position + 1-headViewCount) % span) {
+            when ((position + 1) % span) {
                 0 -> {
                     //最后一列
                     right = 0
@@ -53,7 +55,17 @@ class GridItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
                     left = 0
                 }
             }
-            outRect.set(left, top, right, bottom)
+            if (position < span && isShowTopDivider) {
+                //第一行
+                top = if (topDividerWidth > 0) topDividerWidth else bottom
+            }
+            if (isLastRow(position, span, itemCount)) {
+                if (!isShowLastDivider) {
+                    bottom = 0
+                } else if (bottomDividerWidth > 0) {
+                    bottom = bottomDividerWidth
+                }
+            }
         } else {
             //横向布局
             //判断是否是最后一列
@@ -61,10 +73,8 @@ class GridItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
             left = 0
             bottom = right / 2
             top = right / 2
-            if (!isShowLastDivider && isLastRow(position, span, itemCount)) {
-                right = 0
-            }
-            when ((position + 1-headViewCount) % span) {
+
+            when ((position + 1) % span) {
                 0 -> {
                     //最后一行
                     bottom = 0
@@ -74,13 +84,29 @@ class GridItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
                     top = 0
                 }
             }
-            outRect.set(left, top, right, bottom)
+            if (position < span && isShowTopDivider) {
+                //第一行
+                left = if (topDividerWidth > 0) topDividerWidth else bottom
+            }
+            if (isLastRow(position, span, itemCount)) {
+                if (!isShowLastDivider) {
+                    right = 0
+                } else if (bottomDividerWidth > 0) {
+                    right = bottomDividerWidth
+                }
+            }
         }
+        outRect.set(left, top, right, bottom)
     }
 
-    override fun getDrawRectBound(position: Int, itemCount: Int, view: View, parent: RecyclerView): ArrayList<Rect> {
+    override fun getDrawRectBound(
+        position: Int,
+        itemCount: Int,
+        view: View,
+        parent: RecyclerView
+    ): ArrayList<Rect> {
         if (parent.layoutManager !is GridLayoutManager) {
-            Log.e(tag,"使用GridItemDecoration时,请确保是网格布局")
+            Log.e(tag, "使用GridItemDecoration时,请确保是网格布局")
             return arrayListOf()
         }
         val rectLists = ArrayList<Rect>()
@@ -184,7 +210,8 @@ class GridItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
         return (itemCount - position) <= remind
     }
 
-    class Builder(mContext: Context, layoutOrientation: Int) : BaseItemDecoration.Builder(mContext,layoutOrientation) {
+    class Builder(mContext: Context, layoutOrientation: Int) :
+        BaseItemDecoration.Builder(mContext, layoutOrientation) {
 
         override fun build(): BaseItemDecoration {
             return GridItemDecoration(this)

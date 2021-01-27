@@ -29,9 +29,27 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
     private var paint: Paint = Paint()
     private var dividerWidth: Int = build.dividerWidth
 
+    /**
+     * 顶部的分割线高度 具有高优先级别
+     */
+    protected var topDividerWidth: Int = build.topDividerWidth
+
+    /**
+     * 底部的分割线高度 具有高优先级别
+     */
+    protected var bottomDividerWidth: Int = build.bottomDividerWidth
+
     protected val margin: IntArray = build.margin
 
+    /**
+     * 是否显示底部分割线
+     */
     protected var isShowLastDivider: Boolean = build.isShowLastDivider
+
+    /**
+     * 是否显示顶部分割线
+     */
+    protected var isShowTopDivider: Boolean = build.isShowTopDivider
 
     private var dividerDrawableProvider: DividerDrawableProvider? = build.dividerDrawableProvider
 
@@ -45,8 +63,6 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
 
     protected var orientation = build.orientation
 
-    protected var headViewCount = build.headViewCount
-    private var footViewCount = build.footViewCount
 
     /**
      * 设置分割线绘制的长度是否依照子View的长度  默认是根据RecyclerView的长度或者高度进行绘制的
@@ -59,24 +75,41 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
         }
     }
 
-    override fun getItemOffsets(outRect: Rect, view: View, parent: RecyclerView, state: RecyclerView.State) {
+    override fun getItemOffsets(
+        outRect: Rect,
+        view: View,
+        parent: RecyclerView,
+        state: RecyclerView.State
+    ) {
         super.getItemOffsets(outRect, view, parent, state)
         //View的总数
-        val itemSum = parent.adapter?.itemCount ?: parent.childCount - footViewCount
+        val itemSum = parent.adapter?.itemCount ?: parent.childCount
         //当前View的位置
         val position = parent.getChildAdapterPosition(view)
         setItemOffsets(position, itemSum, outRect, view, parent)
     }
 
-    abstract fun setItemOffsets(position: Int, itemCount: Int, outRect: Rect, view: View, parent: RecyclerView)
-    abstract fun getDrawRectBound(position: Int, itemCount: Int, view: View, parent: RecyclerView): ArrayList<Rect>
+    abstract fun setItemOffsets(
+        position: Int,
+        itemCount: Int,
+        outRect: Rect,
+        view: View,
+        parent: RecyclerView
+    )
+
+    abstract fun getDrawRectBound(
+        position: Int,
+        itemCount: Int,
+        view: View,
+        parent: RecyclerView
+    ): ArrayList<Rect>
 
     override fun onDraw(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
         if (dividerSpaceProvider != null) {
             //空格分割线 不绘制任何东西
             return
         }
-        val childCount = parent.childCount - footViewCount
+        val childCount = parent.childCount
         //遍历所有的View 绘制分割线
         for (index in 0 until childCount) {
             val child = parent.getChildAt(index)
@@ -117,20 +150,20 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
             if (dividerPaintProvider != null) {
                 paint = dividerPaintProvider?.getDividerPaint(childPosition, parent) ?: Paint()
                 rectBound.forEach {
-                    if (Math.abs(it.left-it.right)>Math.abs(it.top-it.bottom)){
+                    if (Math.abs(it.left - it.right) > Math.abs(it.top - it.bottom)) {
 //                        横条
                         c.drawLine(
                             it.left.toFloat(),
-                            (it.top.toFloat()+it.bottom.toFloat())/2,
+                            (it.top.toFloat() + it.bottom.toFloat()) / 2,
                             it.right.toFloat(),
-                            (it.top.toFloat()+it.bottom.toFloat())/2, paint
+                            (it.top.toFloat() + it.bottom.toFloat()) / 2, paint
                         )
-                    }else{
+                    } else {
 //                        竖条
                         c.drawLine(
-                            (it.left.toFloat()+ it.right.toFloat())/2,
+                            (it.left.toFloat() + it.right.toFloat()) / 2,
                             it.top.toFloat(),
-                            (it.left.toFloat()+ it.right.toFloat())/2,
+                            (it.left.toFloat() + it.right.toFloat()) / 2,
                             it.bottom.toFloat(), paint
                         )
                     }
@@ -156,11 +189,17 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
         internal var orientation: Int = layoutOrientation
         internal var dividerWidth: Int = 9
 
+        internal var topDividerWidth: Int = -1
+        internal var bottomDividerWidth: Int = -1
+
         internal val margin: IntArray = intArrayOf(0, 0, 0, 0)
 
         internal var isShowLastDivider: Boolean = false
 
+        internal var isShowTopDivider: Boolean = false
+
         internal var dividerDrawByChild: Boolean = false
+
 
         internal var dividerDrawableProvider: DividerDrawableProvider? = null
 
@@ -171,8 +210,7 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
         internal var dividerSpaceProvider: DividerSpaceProvider? = null
 
         internal var dividerVisibleProvider: DividerVisibleProvider? = null
-        internal var headViewCount: Int = 0
-        internal var footViewCount: Int = 0
+
         /**
          * 设置分割线的高度
          */
@@ -189,13 +227,20 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
             return this
         }
 
-        fun setHeadViewCount(headViewCount: Int): Builder {
-            this.headViewCount = headViewCount
+        /**
+         * 设置分割线的高度
+         */
+        fun setTopDividerWidthPx(dividerWidth: Int): Builder {
+            this.topDividerWidth = dividerWidth
             return this
         }
 
-        fun setFooterViewCount(FootViewCount: Int): Builder {
-            this.footViewCount = FootViewCount
+
+        /**
+         * 设置分割线的高度
+         */
+        fun setBottomDividerWidthPx(dividerWidth: Int): Builder {
+            this.bottomDividerWidth = dividerWidth
             return this
         }
 
@@ -279,13 +324,19 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
          * 对于网格布局就是最后一列或者是最后一行是否有分割线
          * @param showLastDivider true显示尾部分割线  false 不显示尾部分割线 默认是不显示
          */
-        fun showLastDivider(
-            showLastDivider: Boolean = false
-        ): Builder {
+        fun showLastDivider(showLastDivider: Boolean = false): Builder {
             isShowLastDivider = showLastDivider
             return this
         }
 
+
+        /**
+         * 是否显示顶部分割线
+         */
+        fun showTopDivider(isShowTopDivider: Boolean = false): Builder {
+            this.isShowTopDivider = isShowTopDivider
+            return this
+        }
 
         abstract fun build(): BaseItemDecoration
 
@@ -305,7 +356,7 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
     }
 
     /**
-     * 空格分割线 此分割线可以设置不同的分割线的高度 但是该分割线只能适用于 线性分割线
+     * 空格分割线 此分割线可以设置不同的分割线的高度 但是该分割线只能适用于 线性分割线 网格分割线请用 dividerWidth属性设置 间隔
      */
     interface DividerSpaceProvider {
         fun getDividerSpace(position: Int, parent: RecyclerView): Int

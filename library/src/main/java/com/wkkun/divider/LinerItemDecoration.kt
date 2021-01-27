@@ -1,4 +1,5 @@
 package com.wkkun.divider
+
 import android.content.Context
 import android.graphics.Rect
 import android.support.v7.widget.OrientationHelper
@@ -13,30 +14,57 @@ import java.util.*
  **/
 class LinerItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
 
+    private var left = 0
+    private var right = 0
+    private var top = 0
+    private var bottom = 0
+    private var decorationHeight = 0
     override fun setItemOffsets(position: Int, itemCount: Int, outRect: Rect, view: View, parent: RecyclerView) {
-        if (!isShowLastDivider && (position == itemCount - 1)) {
-            outRect.set(0, 0, 0, 0)
-            return
-        }
         if (orientation == OrientationHelper.VERTICAL) {
             //纵向
-            outRect.set(
-                0, 0, 0,
-                dividerSpaceProvider?.getDividerSpace(position, parent) ?: margin[3] + getDrawableHeight(
-                    position,
-                    parent
-                ) + margin[1]
-            )
+            decorationHeight = dividerSpaceProvider?.getDividerSpace(position, parent)
+                    ?: margin[3] + getDrawableHeight(
+                            position,
+                            parent
+                    ) + margin[1]
+            left = 0
+            top = 0
+            right = 0
+            bottom = decorationHeight
+            if (position == 0 && isShowTopDivider) {
+                top = if (topDividerWidth > 0) topDividerWidth else decorationHeight
+            }
+            if (position == (itemCount - 1)) {
+                if (!isShowLastDivider) {
+                    bottom = 0
+                } else if (bottomDividerWidth > 0) {
+                    bottom = bottomDividerWidth
+                }
+            }
+
         } else {
             //横向
-            outRect.set(
-                0, 0,
-                dividerSpaceProvider?.getDividerSpace(position, parent) ?: margin[2] + getDrawableHeight(
-                    position,
-                    parent
-                ) + margin[0], 0
-            )
+            decorationHeight = dividerSpaceProvider?.getDividerSpace(position, parent)
+                    ?: margin[2] + getDrawableHeight(
+                            position,
+                            parent
+                    ) + margin[0]
+            left = 0
+            top = 0
+            right = decorationHeight
+            bottom = 0
+            if (position == 0 && isShowTopDivider) {
+                left = if (topDividerWidth > 0) topDividerWidth else decorationHeight
+            }
+            if (position == (itemCount - 1)) {
+                if (!isShowLastDivider) {
+                    right = 0
+                } else if (bottomDividerWidth > 0) {
+                    right = bottomDividerWidth
+                }
+            }
         }
+        outRect.set(left, top, right, bottom)
     }
 
     override fun getDrawRectBound(position: Int, itemCount: Int, view: View, parent: RecyclerView): ArrayList<Rect> {
@@ -83,7 +111,7 @@ class LinerItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
         return arrayListOf(rectBound)
     }
 
-    class Builder(mContext: Context, layoutOrientation: Int) : BaseItemDecoration.Builder(mContext,layoutOrientation) {
+    class Builder(mContext: Context, layoutOrientation: Int) : BaseItemDecoration.Builder(mContext, layoutOrientation) {
         override fun build(): BaseItemDecoration {
             return LinerItemDecoration(this)
         }
