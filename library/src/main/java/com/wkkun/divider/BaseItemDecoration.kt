@@ -10,6 +10,7 @@ import android.support.annotation.DimenRes
 import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.OrientationHelper
 import android.support.v7.widget.RecyclerView
+import android.util.Log
 import android.view.View
 import java.util.*
 
@@ -132,7 +133,6 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
                 childPosition,
                 parent.adapter?.itemCount ?: parent.childCount, child, parent
             )
-
             if (dividerColorProvider != null) {
                 val color = dividerColorProvider?.getDividerColor(childPosition, parent)
                     ?: Color.parseColor(defaultColor)
@@ -344,7 +344,6 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
 
     interface DividerDrawableProvider {
         fun getDividerDraw(position: Int, parent: RecyclerView): Drawable
-
     }
 
     interface DividerColorProvider {

@@ -47,13 +47,15 @@ class ListActivity : AppCompatActivity() {
 
 
     private fun linear() {
-        recyclerView.layoutManager = LinearLayoutManager(this, OrientationHelper.VERTICAL, false)
+        recyclerView.layoutManager = LinearLayoutManager(this, OrientationHelper.HORIZONTAL, false)
         recyclerView.addItemDecoration(
-            LinerItemDecoration.Builder(this, OrientationHelper.VERTICAL)
+            LinerItemDecoration.Builder(this, OrientationHelper.HORIZONTAL)
                 .setDividerWidthPx(20)//分割线的宽度 单位px
                 .setDividerMarginPx(10, 10, 10, 10)//设置分割线距离item的间隔
                 .setDividerDrawByChild(true)//设置绘制分割线的长度是否是根据item的长度来绘制 默认为false代表绘制是根据RecyclerView的长度来的
-                .showLastDivider(false)//最后一个item后面是否有分割线 默认为false
+                .showLastDivider(true)//最后一个item后面是否有分割线 默认为false
+                .showTopDivider(true)
+                .setBottomDividerWidthPx(80)
                 .setDividerColorProvider(object : BaseItemDecoration.DividerColorProvider {
                     override fun getDividerColor(position: Int, parent: RecyclerView): Int {
                         when ((position + 1) % 4) {
@@ -76,12 +78,12 @@ class ListActivity : AppCompatActivity() {
 
                     }
                 })//设置分割线绘制的颜色  我们可以设置在不同的位置绘制不同的颜色
-                .setDividerVisibleProvider(object : BaseItemDecoration.DividerVisibleProvider {
-                    override fun shouldHideDivider(position: Int, parent: RecyclerView): Boolean {
-                        //在3的倍数位置 不显示颜色
-                        return (position + 1) % 3 == 0
-                    }
-                })//设置在某个位置隐藏分割线 但是分割线的间隔还是在的,只是不再绘制而已
+//                .setDividerVisibleProvider(object : BaseItemDecoration.DividerVisibleProvider {
+//                    override fun shouldHideDivider(position: Int, parent: RecyclerView): Boolean {
+//                        //在3的倍数位置 不显示颜色
+//                        return (position + 1) % 3 == 0
+//                    }
+//                })//设置在某个位置隐藏分割线 但是分割线的间隔还是在的,只是不再绘制而已
                 .build()
         )
     }

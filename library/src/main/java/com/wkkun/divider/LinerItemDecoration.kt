@@ -19,56 +19,65 @@ class LinerItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
     private var top = 0
     private var bottom = 0
     private var decorationHeight = 0
-    override fun setItemOffsets(position: Int, itemCount: Int, outRect: Rect, view: View, parent: RecyclerView) {
+    override fun setItemOffsets(
+        position: Int,
+        itemCount: Int,
+        outRect: Rect,
+        view: View,
+        parent: RecyclerView
+    ) {
         if (orientation == OrientationHelper.VERTICAL) {
             //纵向
             decorationHeight = dividerSpaceProvider?.getDividerSpace(position, parent)
-                    ?: margin[3] + getDrawableHeight(
-                            position,
-                            parent
-                    ) + margin[1]
+                ?: getDrawableHeight(position, parent)
             left = 0
             top = 0
             right = 0
-            bottom = decorationHeight
+            bottom = decorationHeight + margin[1] + margin[3]
             if (position == 0 && isShowTopDivider) {
                 top = if (topDividerWidth > 0) topDividerWidth else decorationHeight
+                top += margin[3]
             }
             if (position == (itemCount - 1)) {
                 if (!isShowLastDivider) {
                     bottom = 0
                 } else if (bottomDividerWidth > 0) {
-                    bottom = bottomDividerWidth
+                    bottom = bottomDividerWidth + margin[3]
                 }
             }
 
         } else {
             //横向
             decorationHeight = dividerSpaceProvider?.getDividerSpace(position, parent)
-                    ?: margin[2] + getDrawableHeight(
-                            position,
-                            parent
-                    ) + margin[0]
+                ?: getDrawableHeight(position, parent)
             left = 0
             top = 0
-            right = decorationHeight
+            right = decorationHeight + margin[0] + margin[2]
             bottom = 0
             if (position == 0 && isShowTopDivider) {
                 left = if (topDividerWidth > 0) topDividerWidth else decorationHeight
+                left += margin[2]
             }
+
             if (position == (itemCount - 1)) {
                 if (!isShowLastDivider) {
                     right = 0
                 } else if (bottomDividerWidth > 0) {
-                    right = bottomDividerWidth
+                    right = bottomDividerWidth + margin[0] + margin[2]
                 }
             }
         }
         outRect.set(left, top, right, bottom)
     }
 
-    override fun getDrawRectBound(position: Int, itemCount: Int, view: View, parent: RecyclerView): ArrayList<Rect> {
+    override fun getDrawRectBound(
+        position: Int,
+        itemCount: Int,
+        view: View,
+        parent: RecyclerView
+    ): ArrayList<Rect> {
         val rectBound = Rect()
+        val list = ArrayList<Rect>()
         parent.getDecoratedBoundsWithMargins(view, rectBound)
         //设置分割线的绘制区域
         if (orientation == OrientationHelper.VERTICAL) {
@@ -86,8 +95,33 @@ class LinerItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
                 }
             }
             rectBound.left += view.translationX.toInt()
-            rectBound.bottom += (view.translationY.toInt() - margin[3])
-            rectBound.top = rectBound.bottom - getDrawableHeight(position, parent)
+            if (position == (itemCount - 1) && isShowLastDivider) {
+                rectBound.bottom += view.translationY.toInt()
+                rectBound.top = if (bottomDividerWidth > 0) {
+                    rectBound.bottom - bottomDividerWidth
+                } else {
+                    rectBound.bottom - getDrawableHeight(position, parent)
+                }
+            } else {
+                rectBound.bottom += (view.translationY.toInt() - margin[3])
+                rectBound.top = rectBound.bottom - getDrawableHeight(position, parent)
+            }
+
+            list.add(rectBound)
+
+            if (position == 0 && isShowTopDivider) {
+                val rectTop = Rect()
+                parent.getDecoratedBoundsWithMargins(view, rectTop)
+                rectTop.left = rectBound.left
+                rectTop.right = rectBound.right
+                rectTop.top += view.translationY.toInt()
+                rectTop.bottom = if (topDividerWidth > 0) {
+                    rectTop.top + topDividerWidth
+                } else {
+                    rectTop.top + getDrawableHeight(position, parent)
+                }
+                list.add(rectTop)
+            }
 
         } else {
             //横向
@@ -105,13 +139,39 @@ class LinerItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
             }
             rectBound.top += view.translationY.toInt()
             rectBound.bottom += view.translationY.toInt()
-            rectBound.right += (view.translationX.toInt() - margin[2])
-            rectBound.left = rectBound.right - getDrawableHeight(position, parent)
+            if (position == (itemCount - 1) && isShowLastDivider) {
+                rectBound.right += view.translationX.toInt()
+                rectBound.left = if (bottomDividerWidth > 0) {
+                    rectBound.right - bottomDividerWidth
+                } else {
+                    rectBound.right - getDrawableHeight(position, parent)
+                }
+            } else {
+                rectBound.right += (view.translationX.toInt() - margin[2])
+                rectBound.left = rectBound.right - getDrawableHeight(position, parent)
+            }
+            list.add(rectBound)
+
+            if (position == 0 && isShowTopDivider) {
+                val rectTop = Rect()
+                parent.getDecoratedBoundsWithMargins(view, rectTop)
+                rectTop.top = rectBound.top
+                rectTop.bottom = rectBound.bottom
+                rectTop.left += view.translationY.toInt()
+                rectTop.right = if (topDividerWidth > 0) {
+                    rectTop.left + topDividerWidth
+                } else {
+                    rectTop.left + getDrawableHeight(position, parent)
+                }
+                list.add(rectTop)
+            }
+
         }
-        return arrayListOf(rectBound)
+        return list
     }
 
-    class Builder(mContext: Context, layoutOrientation: Int) : BaseItemDecoration.Builder(mContext, layoutOrientation) {
+    class Builder(mContext: Context, layoutOrientation: Int) :
+        BaseItemDecoration.Builder(mContext, layoutOrientation) {
         override fun build(): BaseItemDecoration {
             return LinerItemDecoration(this)
         }
