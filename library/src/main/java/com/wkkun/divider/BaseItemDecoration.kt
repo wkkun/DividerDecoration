@@ -30,27 +30,35 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
     private var paint: Paint = Paint()
     private var dividerWidth: Int = build.dividerWidth
 
-    /**
-     * 顶部的分割线高度 具有高优先级别
-     */
-    protected var topDividerWidth: Int = build.topDividerWidth
-
-    /**
-     * 底部的分割线高度 具有高优先级别
-     */
-    protected var bottomDividerWidth: Int = build.bottomDividerWidth
 
     protected val margin: IntArray = build.margin
 
     /**
-     * 是否显示底部分割线
+     * RecyclerView 顶部的间距
      */
-    protected var isShowLastDivider: Boolean = build.isShowLastDivider
+    protected var recyclerViewTopSpace: Int = build.recyclerViewTopSpace
 
     /**
-     * 是否显示顶部分割线
+     * RecyclerView 尾部的间距
      */
-    protected var isShowTopDivider: Boolean = build.isShowTopDivider
+    protected var recyclerViewBottomSpace: Int = build.recyclerViewBottomSpace
+
+    /**
+     * 绘制分割线  需要忽略顶部item的数量
+     */
+    protected var ignoreHeadItemCount = build.ignoreHeadItemCount
+
+    /**
+     * 绘制分割线 需要忽略尾部item的数量
+     */
+    protected var ignoreFooterItemCount = build.ignoreFooterItemCount
+
+    /**
+     * 是否绘制RecyclerView 第一个item 上面的分割线
+     * 默认为false,如果设置true 也就是说第一个item 有两条分割线 一个是在其上面 一个在其下面
+     */
+    protected var isDrawFirstTopDivider: Boolean = build.isDrawFirstTopDivider
+
 
     private var dividerDrawableProvider: DividerDrawableProvider? = build.dividerDrawableProvider
 
@@ -74,6 +82,16 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
         if (orientation != OrientationHelper.HORIZONTAL && orientation != OrientationHelper.VERTICAL) {
             throw RuntimeException("请先使用方法 Builder.setOrientation(orientation: Int),设置列表方向")
         }
+    }
+
+    protected fun isShouldShowItemDecoration(currentPosition: Int, totalCount: Int): Boolean {
+        if (currentPosition < ignoreHeadItemCount) {
+            return false
+        }
+        if (currentPosition >= (totalCount - ignoreFooterItemCount)) {
+            return false
+        }
+        return true
     }
 
     override fun getItemOffsets(
@@ -111,11 +129,18 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
             return
         }
         val childCount = parent.childCount
+        val totalCountItem = parent.adapter?.itemCount ?: parent.childCount
         //遍历所有的View 绘制分割线
         for (index in 0 until childCount) {
             val child = parent.getChildAt(index)
             //子View在adapter中的位置
             val childPosition = parent.getChildAdapterPosition(child)
+            //不需要绘制
+            if (this is LinerItemDecoration && !isShouldShowItemDecoration(
+                    childPosition,
+                    totalCountItem
+                )
+            ) return
             if ((parent.layoutManager !is GridLayoutManager) && dividerVisibleProvider?.shouldHideDivider(
                     childPosition,
                     parent
@@ -124,11 +149,7 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
                 //隐藏分割线 网格不支持隐藏分割线
                 continue
             }
-            if (!isShowLastDivider && ((childPosition + 1) == parent.adapter?.itemCount ?: parent.childCount)) {
-                //最后一个View 隐藏分割线
-                if (parent.layoutManager !is GridLayoutManager)
-                    continue
-            }
+
             val rectBound = getDrawRectBound(
                 childPosition,
                 parent.adapter?.itemCount ?: parent.childCount, child, parent
@@ -151,7 +172,7 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
                 paint = dividerPaintProvider?.getDividerPaint(childPosition, parent) ?: Paint()
                 rectBound.forEach {
                     if (Math.abs(it.left - it.right) > Math.abs(it.top - it.bottom)) {
-//                        横条
+                        //  横条
                         c.drawLine(
                             it.left.toFloat(),
                             (it.top.toFloat() + it.bottom.toFloat()) / 2,
@@ -159,7 +180,7 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
                             (it.top.toFloat() + it.bottom.toFloat()) / 2, paint
                         )
                     } else {
-//                        竖条
+                        // 竖条
                         c.drawLine(
                             (it.left.toFloat() + it.right.toFloat()) / 2,
                             it.top.toFloat(),
@@ -182,6 +203,7 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
             }
 
         }
+
     }
 
 
@@ -189,16 +211,38 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
         internal var orientation: Int = layoutOrientation
         internal var dividerWidth: Int = 9
 
-        internal var topDividerWidth: Int = -1
-        internal var bottomDividerWidth: Int = -1
 
         internal val margin: IntArray = intArrayOf(0, 0, 0, 0)
 
-        internal var isShowLastDivider: Boolean = false
 
-        internal var isShowTopDivider: Boolean = false
+        /**
+         * 是否绘制RecyclerView 第一个item 上面的分割线
+         * 默认为false,如果设置true 也就是说第一个item 有两条分割线 一个是在其上面 一个在其下面
+         */
+        internal var isDrawFirstTopDivider: Boolean = false
+
 
         internal var dividerDrawByChild: Boolean = false
+
+        /**
+         * RecyclerView 顶部的间距
+         */
+        internal var recyclerViewTopSpace: Int = 0
+
+        /**
+         * RecyclerView 尾部的间距
+         */
+        internal var recyclerViewBottomSpace: Int = 0
+
+        /**
+         * 绘制分割线  需要忽略顶部item的数量
+         */
+        internal var ignoreHeadItemCount = 0
+
+        /**
+         * 绘制分割线 需要忽略尾部item的数量
+         */
+        internal var ignoreFooterItemCount = 0
 
 
         internal var dividerDrawableProvider: DividerDrawableProvider? = null
@@ -211,6 +255,48 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
 
         internal var dividerVisibleProvider: DividerVisibleProvider? = null
 
+
+        /**
+         * 如果直接给RecyclerView设置margin 或者padding 则这个margin和padding是不在滑动区域的,
+         * 此处给第一个item设置顶部额外的空格间距
+         * 设置RecyclerView 整体顶部的间距
+         */
+        fun setRecyclerViewTopSpacePx(recyclerViewTopSpace: Int): Builder {
+            this.recyclerViewTopSpace = recyclerViewTopSpace
+            return this
+        }
+
+        /**
+         * 如果直接给RecyclerView设置margin 或者padding 则这个margin和padding是不在滑动区域的,
+         * 此处给第一个item设置尾部额外的空格间距
+         * 设置RecyclerView 整体尾部的间距
+         */
+        fun setRecyclerViewBottomSpacePx(recyclerViewBottomSpace: Int): Builder {
+            this.recyclerViewBottomSpace = recyclerViewBottomSpace
+            return this
+        }
+
+        /**
+         * 设置RecyclerView从 第一个item开始忽略分割线item的数量
+         */
+        fun setIgnoreHeadItemCount(ignoreHeadItemCount: Int): Builder {
+            this.ignoreHeadItemCount = ignoreHeadItemCount
+            return this
+        }
+
+        /**
+         * 设置RecyclerView从 最后一个item开始忽略分割线item的数量
+         */
+        fun setIgnoreFootItemCount(ignoreFooterItemCount: Int): Builder {
+            this.ignoreFooterItemCount = ignoreFooterItemCount
+            return this
+        }
+
+        fun setIsDrawFirstItemTopDivider(isDraw: Boolean): Builder {
+            this.isDrawFirstTopDivider = isDraw
+            return this
+        }
+
         /**
          * 设置分割线的高度
          */
@@ -218,6 +304,7 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
             this.dividerWidth = mContext.resources.getDimension(dividerWidth).toInt()
             return this
         }
+
 
         /**
          * 设置分割线的高度
@@ -227,22 +314,6 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
             return this
         }
 
-        /**
-         * 设置分割线的高度
-         */
-        fun setTopDividerWidthPx(dividerWidth: Int): Builder {
-            this.topDividerWidth = dividerWidth
-            return this
-        }
-
-
-        /**
-         * 设置分割线的高度
-         */
-        fun setBottomDividerWidthPx(dividerWidth: Int): Builder {
-            this.bottomDividerWidth = dividerWidth
-            return this
-        }
 
         /**
          * 设置分割线的 周边Margin
@@ -318,25 +389,6 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
             return this
         }
 
-        /**
-         * 是否显示尾部的分割线
-         * 对于线性分割线是最后一个条目是否有分割线
-         * 对于网格布局就是最后一列或者是最后一行是否有分割线
-         * @param showLastDivider true显示尾部分割线  false 不显示尾部分割线 默认是不显示
-         */
-        fun showLastDivider(showLastDivider: Boolean = false): Builder {
-            isShowLastDivider = showLastDivider
-            return this
-        }
-
-
-        /**
-         * 是否显示顶部分割线
-         */
-        fun showTopDivider(isShowTopDivider: Boolean = false): Builder {
-            this.isShowTopDivider = isShowTopDivider
-            return this
-        }
 
         abstract fun build(): BaseItemDecoration
 

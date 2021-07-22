@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Rect
 import android.support.v7.widget.OrientationHelper
 import android.support.v7.widget.RecyclerView
+import android.util.Log
 import android.view.View
 import java.util.*
 
@@ -26,49 +27,50 @@ class LinerItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
         view: View,
         parent: RecyclerView
     ) {
+        decorationHeight = dividerSpaceProvider?.getDividerSpace(position, parent)
+            ?: getDrawableHeight(position, parent)
+        reset()
         if (orientation == OrientationHelper.VERTICAL) {
             //纵向
-            decorationHeight = dividerSpaceProvider?.getDividerSpace(position, parent)
-                ?: getDrawableHeight(position, parent)
-            left = 0
-            top = 0
-            right = 0
-            bottom = decorationHeight + margin[1] + margin[3]
-            if (position == 0 && isShowTopDivider) {
-                top = if (topDividerWidth > 0) topDividerWidth else decorationHeight
-                top += margin[3]
+            if (position == 0) {
+                top = recyclerViewTopSpace
             }
             if (position == (itemCount - 1)) {
-                if (!isShowLastDivider) {
-                    bottom = 0
-                } else if (bottomDividerWidth > 0) {
-                    bottom = bottomDividerWidth + margin[3]
+                bottom = recyclerViewBottomSpace
+            }
+            if (isShouldShowItemDecoration(position, itemCount)) {
+                bottom += (decorationHeight + margin[1] + margin[3])
+                if (isDrawFirstTopDivider && position == 0) {
+                    top += (decorationHeight + margin[1] + margin[3])
                 }
             }
-
         } else {
             //横向
-            decorationHeight = dividerSpaceProvider?.getDividerSpace(position, parent)
-                ?: getDrawableHeight(position, parent)
-            left = 0
-            top = 0
-            right = decorationHeight + margin[0] + margin[2]
-            bottom = 0
-            if (position == 0 && isShowTopDivider) {
-                left = if (topDividerWidth > 0) topDividerWidth else decorationHeight
-                left += margin[2]
+            if (position == 0) {
+                left = recyclerViewTopSpace
             }
-
             if (position == (itemCount - 1)) {
-                if (!isShowLastDivider) {
-                    right = 0
-                } else if (bottomDividerWidth > 0) {
-                    right = bottomDividerWidth + margin[0] + margin[2]
+                right = recyclerViewBottomSpace
+            }
+            if (isShouldShowItemDecoration(position, itemCount)) {
+                right += (decorationHeight + margin[0] + margin[2])
+                if (isDrawFirstTopDivider && position == 0) {
+                    left += (decorationHeight + margin[0] + margin[2])
                 }
             }
         }
+        Log.d(tag, "setItemOffsets,left=${left},right=${right},top=${top},bottom=${bottom}")
         outRect.set(left, top, right, bottom)
     }
+
+
+    private fun reset() {
+        left = 0
+        top = 0
+        right = 0
+        bottom = 0
+    }
+
 
     override fun getDrawRectBound(
         position: Int,
@@ -76,9 +78,11 @@ class LinerItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
         view: View,
         parent: RecyclerView
     ): ArrayList<Rect> {
-        val rectBound = Rect()
+        val dividerHeight = getDrawableHeight(position, parent)
+        val itemRectRound = Rect()
         val list = ArrayList<Rect>()
-        parent.getDecoratedBoundsWithMargins(view, rectBound)
+        parent.getDecoratedBoundsWithMargins(view, itemRectRound)
+        val rectBound = Rect(itemRectRound)
         //设置分割线的绘制区域
         if (orientation == OrientationHelper.VERTICAL) {
             //纵向
@@ -95,32 +99,18 @@ class LinerItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
                 }
             }
             rectBound.left += view.translationX.toInt()
-            if (position == (itemCount - 1) && isShowLastDivider) {
-                rectBound.bottom += view.translationY.toInt()
-                rectBound.top = if (bottomDividerWidth > 0) {
-                    rectBound.bottom - bottomDividerWidth
-                } else {
-                    rectBound.bottom - getDrawableHeight(position, parent)
-                }
-            } else {
-                rectBound.bottom += (view.translationY.toInt() - margin[3])
-                rectBound.top = rectBound.bottom - getDrawableHeight(position, parent)
+            rectBound.bottom += (view.translationY.toInt() - margin[3])
+            if (position == (itemCount - 1)) {
+                rectBound.bottom -= recyclerViewBottomSpace
             }
-
+            rectBound.top = rectBound.bottom - dividerHeight
             list.add(rectBound)
-
-            if (position == 0 && isShowTopDivider) {
-                val rectTop = Rect()
-                parent.getDecoratedBoundsWithMargins(view, rectTop)
-                rectTop.left = rectBound.left
-                rectTop.right = rectBound.right
-                rectTop.top += view.translationY.toInt()
-                rectTop.bottom = if (topDividerWidth > 0) {
-                    rectTop.top + topDividerWidth
-                } else {
-                    rectTop.top + getDrawableHeight(position, parent)
-                }
-                list.add(rectTop)
+            if (position == 0 && isDrawFirstTopDivider) {
+                val firstTopRect = Rect(rectBound)
+                firstTopRect.top =
+                    itemRectRound.top + recyclerViewTopSpace + (view.translationY.toInt() + margin[1])
+                firstTopRect.bottom = firstTopRect.top + dividerHeight
+                list.add(firstTopRect)
             }
 
         } else {
@@ -139,34 +129,22 @@ class LinerItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
             }
             rectBound.top += view.translationY.toInt()
             rectBound.bottom += view.translationY.toInt()
-            if (position == (itemCount - 1) && isShowLastDivider) {
-                rectBound.right += view.translationX.toInt()
-                rectBound.left = if (bottomDividerWidth > 0) {
-                    rectBound.right - bottomDividerWidth
-                } else {
-                    rectBound.right - getDrawableHeight(position, parent)
-                }
-            } else {
-                rectBound.right += (view.translationX.toInt() - margin[2])
-                rectBound.left = rectBound.right - getDrawableHeight(position, parent)
+            rectBound.right += (view.translationX.toInt() - margin[2])
+            if (position == (itemCount - 1)) {
+                rectBound.right -= recyclerViewBottomSpace
             }
+            rectBound.left = rectBound.right - dividerHeight
             list.add(rectBound)
-
-            if (position == 0 && isShowTopDivider) {
-                val rectTop = Rect()
-                parent.getDecoratedBoundsWithMargins(view, rectTop)
-                rectTop.top = rectBound.top
-                rectTop.bottom = rectBound.bottom
-                rectTop.left += view.translationY.toInt()
-                rectTop.right = if (topDividerWidth > 0) {
-                    rectTop.left + topDividerWidth
-                } else {
-                    rectTop.left + getDrawableHeight(position, parent)
-                }
-                list.add(rectTop)
+            if (position == 0 && isDrawFirstTopDivider) {
+                val firstTopRect = Rect(rectBound)
+                firstTopRect.left =
+                    itemRectRound.left + recyclerViewTopSpace + (view.translationX.toInt() +margin[0])
+                firstTopRect.right = firstTopRect.left + dividerHeight
+                list.add(firstTopRect)
             }
 
         }
+        Log.d(tag, "getDrawRectBound,list=$list")
         return list
     }
 

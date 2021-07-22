@@ -20,6 +20,11 @@ class GridItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
     private var right = 0
     private var bottom = 0
     private var span: Int = 0
+    private var dividerHeight = 0
+    private var ignoreHeadLine = 0
+    private var ignoreFooterLine = 0
+    var isDrawLastDivider: Boolean = builder.isDrawLastDivider
+
     override fun setItemOffsets(
         position: Int,
         itemCount: Int,
@@ -27,6 +32,7 @@ class GridItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
         view: View,
         parent: RecyclerView
     ) {
+        dividerHeight = getDrawableHeight(position, parent)
         if (span == 0) {
             if (parent.layoutManager !is GridLayoutManager) {
                 Log.e(tag, "使用GridItemDecoration时,请确保是网格布局")
@@ -34,16 +40,22 @@ class GridItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
                 return
             }
             span = (parent.layoutManager as GridLayoutManager).spanCount
+            ignoreHeadLine = (ignoreHeadItemCount / span.toFloat() + 0.5f).toInt()
+            ignoreFooterLine = (ignoreFooterItemCount / span.toFloat() + 0.5f).toInt()
         }
 
         if (orientation == OrientationHelper.VERTICAL) {
             //纵向布局
-            bottom = getDrawableHeight(position, parent) + margin[1] + margin[3]
-            left = bottom / 2
-            right = bottom / 2
+            bottom = dividerHeight + margin[1] + margin[3]
+            left = dividerHeight / 2 + margin[2]
+            right = dividerHeight / 2 + margin[0]
             top = 0
-            if (!isShowLastDivider && isLastRow(position, span, itemCount)) {
-                bottom = 0
+            if (position < span) {
+                //第一行
+                top = recyclerViewTopSpace
+                if (isDrawFirstTopDivider) {
+                    top += bottom
+                }
             }
             when ((position + 1) % span) {
                 0 -> {
@@ -55,25 +67,32 @@ class GridItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
                     left = 0
                 }
             }
-            if (position < span && isShowTopDivider) {
-                //第一行
-                top = if (topDividerWidth > 0) topDividerWidth else bottom
-            }
             if (isLastRow(position, span, itemCount)) {
-                if (!isShowLastDivider) {
-                    bottom = 0
-                } else if (bottomDividerWidth > 0) {
-                    bottom = bottomDividerWidth
+                bottom += recyclerViewBottomSpace
+                if (!isDrawLastDivider) {
+                    bottom = recyclerViewBottomSpace
                 }
             }
+
         } else {
             //横向布局
-            //判断是否是最后一列
-            right = getDrawableHeight(position, parent) + margin[0] + margin[2]
+            bottom = dividerHeight / 2 + margin[0]
+            top = dividerHeight / 2 + margin[2]
+            right = dividerHeight + margin[1] + margin[3]
             left = 0
-            bottom = right / 2
-            top = right / 2
-
+            if (position < span) {
+                //第一行
+                left = recyclerViewTopSpace
+                if (isDrawFirstTopDivider) {
+                    left += bottom
+                }
+            }
+            if (isLastRow(position, span, itemCount)) {
+                right += recyclerViewBottomSpace
+                if (!isDrawLastDivider) {
+                    right = recyclerViewBottomSpace
+                }
+            }
             when ((position + 1) % span) {
                 0 -> {
                     //最后一行
@@ -84,17 +103,7 @@ class GridItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
                     top = 0
                 }
             }
-            if (position < span && isShowTopDivider) {
-                //第一行
-                left = if (topDividerWidth > 0) topDividerWidth else bottom
-            }
-            if (isLastRow(position, span, itemCount)) {
-                if (!isShowLastDivider) {
-                    right = 0
-                } else if (bottomDividerWidth > 0) {
-                    right = bottomDividerWidth
-                }
-            }
+
         }
         outRect.set(left, top, right, bottom)
     }
@@ -113,20 +122,39 @@ class GridItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
         val viewBound = Rect()
         val dividerHeight = getDrawableHeight(position, parent)
         parent.getDecoratedBoundsWithMargins(view, viewBound)
-        if (span == 0)
+        if (span == 0) {
             span = (parent.layoutManager as GridLayoutManager).spanCount
+        }
         if (orientation == OrientationHelper.VERTICAL) {
+            val isLastRow = isLastRow(position, span, itemCount)
             //纵向
-            if (isShowLastDivider || !isLastRow(position, span, itemCount)) {
-                //绘制尾部的分割线
-                left = viewBound.left + view.translationX.toInt()
-                right = viewBound.right + view.translationX.toInt()
-                bottom = viewBound.bottom + (view.translationY.toInt() - margin[3])
-                top = bottom - dividerHeight
+            //添加底部分割线
+            left = viewBound.left + view.translationX.toInt()
+            right = viewBound.right + view.translationX.toInt()
+            bottom = viewBound.bottom + (view.translationY.toInt() - margin[3])
+            if (isLastRow) {
+                bottom -= recyclerViewBottomSpace
+            }
+            top = bottom - dividerHeight
+            if (!isLastRow || isDrawLastDivider)
+                rectLists.add(Rect(left, top, right, bottom))
+
+            if (isDrawFirstTopDivider && position < span) {
+                //添加顶部分割线
+                top = viewBound.top + view.translationY.toInt() + recyclerViewTopSpace + margin[1]
+                bottom = top + dividerHeight
                 rectLists.add(Rect(left, top, right, bottom))
             }
             top = viewBound.top + view.translationY.toInt()
-            bottom = viewBound.bottom + view.translationY.toInt()
+            if (position < span) {
+                top += recyclerViewTopSpace
+            }
+            bottom = viewBound.bottom
+            if (isLastRow) {
+                bottom -= recyclerViewBottomSpace
+                if (isDrawLastDivider)
+                    bottom -= (margin[3] + dividerHeight)
+            }
             when ((position + 1) % span) {
                 0 -> {
                     //最后一列
@@ -157,17 +185,36 @@ class GridItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
                 }
             }
         } else {
+            val isLastRow = isLastRow(position, span, itemCount)
             //横向
-            if (isShowLastDivider || !isLastRow(position, span, itemCount)) {
-                //绘制尾部的分割线
-                right = viewBound.right + (view.translationX.toInt() - margin[2])
-                left = right - dividerHeight
+            //绘制尾部的分割线
+            bottom = viewBound.bottom + view.translationY.toInt()
+            top = viewBound.top + view.translationY.toInt()
+            right = viewBound.right + view.translationX.toInt() - margin[3]
+            if (isLastRow) {
+                right -= recyclerViewBottomSpace
+            }
+            left = right - dividerHeight
+            if (!isLastRow || isDrawLastDivider)
+                rectLists.add(Rect(left, top, right, bottom))
+            if (isDrawFirstTopDivider && position < span) {
+                //添加顶部分割线
                 bottom = viewBound.bottom + view.translationY.toInt()
                 top = viewBound.top + view.translationY.toInt()
+                left = viewBound.left + margin[1] + recyclerViewTopSpace
+                right = left + dividerHeight
                 rectLists.add(Rect(left, top, right, bottom))
             }
-            left = viewBound.left + view.translationX.toInt()
-            right = viewBound.right + view.translationX.toInt()
+            left = viewBound.left
+            right = viewBound.right
+            if (position < span) {
+                left += recyclerViewTopSpace
+            }
+            if (isLastRow) {
+                right -= recyclerViewBottomSpace
+                if (isDrawLastDivider)
+                    right -= (dividerHeight + (margin[3]))
+            }
             when ((position + 1) % span) {
                 1 -> {
                     //第一行
@@ -213,8 +260,14 @@ class GridItemDecoration(builder: Builder) : BaseItemDecoration(builder) {
     class Builder(mContext: Context, layoutOrientation: Int) :
         BaseItemDecoration.Builder(mContext, layoutOrientation) {
 
+        var isDrawLastDivider: Boolean = false
         override fun build(): BaseItemDecoration {
             return GridItemDecoration(this)
+        }
+
+        fun setIsDrawLastDivider(isDrawLastDivider: Boolean): Builder {
+            this.isDrawLastDivider = isDrawLastDivider
+            return this
         }
 
     }
