@@ -144,10 +144,15 @@ class ListActivity : AppCompatActivity() {
      */
     private fun gridSpace() {
         recyclerView.layoutManager = GridLayoutManager(this, 3, OrientationHelper.VERTICAL, false)
+        recyclerView.hasFixedSize()
         recyclerView.addItemDecoration(
-            GridItemDecoration.Builder(this, OrientationHelper.VERTICAL)
-                .setDividerWidthPx(20)
-                .build()
+            ItemDecorationHelper.getSimpleGridSpaceITemDecoration(
+                this,
+                OrientationHelper.VERTICAL,
+                100,
+                50,
+                20
+            )
         )
     }
 

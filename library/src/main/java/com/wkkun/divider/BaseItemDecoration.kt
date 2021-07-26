@@ -72,6 +72,8 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
 
     protected var orientation = build.orientation
 
+    protected var isOnlySpace = build.isOnlySpace
+
 
     /**
      * 设置分割线绘制的长度是否依照子View的长度  默认是根据RecyclerView的长度或者高度进行绘制的
@@ -124,7 +126,7 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
     ): ArrayList<Rect>
 
     override fun onDraw(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
-        if (dividerSpaceProvider != null) {
+        if (isOnlySpace || dividerSpaceProvider != null) {
             //空格分割线 不绘制任何东西
             return
         }
@@ -214,6 +216,7 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
 
         internal val margin: IntArray = intArrayOf(0, 0, 0, 0)
 
+        internal var isOnlySpace: Boolean = false
 
         /**
          * 是否绘制RecyclerView 第一个item 上面的分割线
@@ -386,6 +389,11 @@ abstract class BaseItemDecoration constructor(build: Builder) : RecyclerView.Ite
 
         fun setDividerDrawByChild(drawByChild: Boolean): Builder {
             dividerDrawByChild = drawByChild
+            return this
+        }
+
+        fun setIsOnlySpace(onlySpace: Boolean): Builder {
+            isOnlySpace = onlySpace
             return this
         }
 
